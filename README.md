@@ -16,27 +16,21 @@ Runs as a single Docker container with a small FastAPI + HTMX web UI for trackin
 
 ## Quick start (Docker Compose)
 
-Every push to `main` builds and publishes an image to GHCR via [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml), so deploying is just pulling it — no build tools or source checkout needed on the host:
-
 ```bash
 curl -O https://raw.githubusercontent.com/inket/archivelo/main/docker-compose.yml
 docker compose pull
 docker compose up -d
 ```
 
-(Or `git clone` the repo if you'd rather keep the compose file version-controlled locally.)
-
-Since this repo is **private**, the published image is private too — the host pulling it needs to authenticate once:
+This repo (and its image) is currently **private**, so the first `pull` needs a one-time login:
 
 ```bash
 echo "<a GitHub PAT with read:packages scope>" | docker login ghcr.io -u inket --password-stdin
 ```
 
-Alternatively, make the `archivelo` package public from its GitHub Packages settings (independent of the repo's own visibility) and skip the login step entirely.
-
 The app will be available at `http://<host>:8000`. Downloaded videos, the database, and logs all live under `./data`, bind-mounted into the container — back that folder up if you care about the archive.
 
-To update to the latest image later: `docker compose pull && docker compose up -d`.
+To update later: `docker compose pull && docker compose up -d`.
 
 ### Configuration
 
@@ -85,6 +79,7 @@ set -a && source .env.local && set +a
 - Discovery and downloads run as background threads inside the same process — no separate worker/queue service.
 - The site's markup is scraped with a mix of `BeautifulSoup` and targeted regexes (some of its HTML is malformed enough that a strict tree parse misses content).
 - Downloads shell out to `yt-dlp` as a subprocess rather than using its Python API, with an independent watchdog thread that kills and retries a download if it stalls — this proved more reliable than relying on yt-dlp's own internal timeouts.
+- Every push to `main` builds and publishes the image to `ghcr.io/inket/archivelo` via [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml) — deploying is just pulling, nothing gets built on the host.
 
 ## License
 
