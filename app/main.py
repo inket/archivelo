@@ -5,7 +5,7 @@ import mimetypes
 import os
 import re
 
-from fastapi import Depends, FastAPI, Form, HTTPException, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -34,6 +34,14 @@ log = logging.getLogger("App")
 
 app = FastAPI(title="Archivelo")
 templates = Jinja2Templates(directory="app/templates")
+
+# Registered on `router` below, then mounted onto `app` under BASE_PATH at
+# the bottom of this file -- so the app's own routes live under the prefix
+# internally (e.g. /archivelo/videos/1), matching how most subpath-aware
+# self-hosted apps behave (a "URL Base" setting). A reverse proxy can then
+# just forward /archivelo/* through unmodified -- no rewrite/strip rule
+# needed on the proxy side.
+router = APIRouter()
 
 try:
     app.mount(f"{config.BASE_PATH}/static", StaticFiles(directory="app/static"), name="static")
@@ -142,25 +150,25 @@ def _latest_context(request: Request, page: int, db: Session) -> dict:
     }
 
 
-@app.get("/")
+@router.get("/")
 def index(request: Request, page: int = 1, db: Session = Depends(get_db)):
     context = _latest_context(request, page, db)
     context["active_tab"] = "latest"
     return templates.TemplateResponse("index.html", context)
 
 
-@app.get("/latest/refresh")
+@router.get("/latest/refresh")
 def latest_refresh(request: Request, page: int = 1, db: Session = Depends(get_db)):
     return templates.TemplateResponse("_latest_content.html", _latest_context(request, page, db))
 
 
-@app.post("/check-now")
+@router.post("/check-now")
 def check_now(request: Request, page: int = 1, db: Session = Depends(get_db)):
     worker.run_discovery_once()
     return templates.TemplateResponse("_latest_content.html", _latest_context(request, page, db))
 
 
-@app.post("/videos/{video_id}/queue")
+@router.post("/videos/{video_id}/queue")
 def queue_video(video_id: int, request: Request, db: Session = Depends(get_db)):
     video = db.get(Video, video_id)
     if video is not None and video.status in ("discovered", "failed", "skipped"):
@@ -176,7 +184,7 @@ def queue_video(video_id: int, request: Request, db: Session = Depends(get_db)):
     )
 
 
-@app.post("/videos/{video_id}/queue-redirect")
+@router.post("/videos/{video_id}/queue-redirect")
 def queue_video_redirect(video_id: int, db: Session = Depends(get_db)):
     """Same as /queue, but for the detail page's plain form -- redirects back
     instead of returning a table-row fragment. Also handles resuming a
@@ -192,7 +200,7 @@ def queue_video_redirect(video_id: int, db: Session = Depends(get_db)):
     return RedirectResponse(url=f"{config.BASE_PATH}/videos/{video_id}", status_code=303)
 
 
-@app.post("/videos/{video_id}/delete-redirect")
+@router.post("/videos/{video_id}/delete-redirect")
 def delete_video_redirect(video_id: int, db: Session = Depends(get_db)):
     """Discards a canceled download's partial file -- detail-page counterpart
     to /downloads/{id}/delete."""
@@ -209,7 +217,7 @@ def delete_video_redirect(video_id: int, db: Session = Depends(get_db)):
     return RedirectResponse(url=f"{config.BASE_PATH}/videos/{video_id}", status_code=303)
 
 
-@app.post("/videos/{video_id}/redownload")
+@router.post("/videos/{video_id}/redownload")
 def redownload_video(video_id: int, db: Session = Depends(get_db)):
     """Deletes the existing file and re-queues the video from scratch."""
     video = db.get(Video, video_id)
@@ -231,7 +239,7 @@ def redownload_video(video_id: int, db: Session = Depends(get_db)):
     return RedirectResponse(url=f"{config.BASE_PATH}/videos/{video_id}", status_code=303)
 
 
-@app.get("/videos/{video_id}")
+@router.get("/videos/{video_id}")
 def video_detail(video_id: int, request: Request, db: Session = Depends(get_db)):
     video = db.get(Video, video_id)
     if video is None:
@@ -241,7 +249,7 @@ def video_detail(video_id: int, request: Request, db: Session = Depends(get_db))
     )
 
 
-@app.post("/videos/{video_id}/position")
+@router.post("/videos/{video_id}/position")
 def save_position(video_id: int, position: float = Form(...), db: Session = Depends(get_db)):
     video = db.get(Video, video_id)
     if video is not None:
@@ -266,7 +274,7 @@ def _iter_file_range(path: str, start: int, end: int):
             yield chunk
 
 
-@app.get("/videos/{video_id}/file")
+@router.get("/videos/{video_id}/file")
 def video_file(video_id: int, request: Request, db: Session = Depends(get_db)):
     video = db.get(Video, video_id)
     if video is None or not video.file_path or not os.path.isfile(video.file_path):
@@ -304,7 +312,7 @@ def video_file(video_id: int, request: Request, db: Session = Depends(get_db)):
 CATEGORY_RESULT_LIMIT = 200
 
 
-@app.get("/categories")
+@router.get("/categories")
 def categories(request: Request, q: str = "", db: Session = Depends(get_db)):
     q = q.strip()
     all_categories = []
@@ -335,7 +343,7 @@ def categories(request: Request, q: str = "", db: Session = Depends(get_db)):
     )
 
 
-@app.post("/categories/{category_id}/subscribe")
+@router.post("/categories/{category_id}/subscribe")
 def toggle_subscribe(category_id: int, request: Request, db: Session = Depends(get_db)):
     category = db.get(Category, category_id)
     if category is not None:
@@ -407,7 +415,7 @@ def _category_context(request: Request, category: Category, page: int, db: Sessi
     }
 
 
-@app.get("/categories/{category_id}")
+@router.get("/categories/{category_id}")
 def category_detail(
     category_id: int, request: Request, page: int = 1, saved: bool = False, db: Session = Depends(get_db)
 ):
@@ -419,7 +427,7 @@ def category_detail(
     return templates.TemplateResponse("category_detail.html", context)
 
 
-@app.post("/categories/{category_id}/check-now")
+@router.post("/categories/{category_id}/check-now")
 def category_check_now(category_id: int, request: Request, page: int = 1, db: Session = Depends(get_db)):
     category = db.get(Category, category_id)
     if category is None:
@@ -431,7 +439,7 @@ def category_check_now(category_id: int, request: Request, page: int = 1, db: Se
     )
 
 
-@app.post("/categories/{category_id}/save")
+@router.post("/categories/{category_id}/save")
 def save_subscribe(
     category_id: int,
     subscribed: str | None = Form(None),
@@ -461,7 +469,7 @@ def save_subscribe(
     return RedirectResponse(url=f"{config.BASE_PATH}/categories/{category_id}?saved=1", status_code=303)
 
 
-@app.post("/categories/{category_id}/queue-all")
+@router.post("/categories/{category_id}/queue-all")
 def queue_all(category_id: int, request: Request, page: int = 1, db: Session = Depends(get_db)):
     category = db.get(Category, category_id)
     if category is None:
@@ -496,7 +504,7 @@ def queue_all(category_id: int, request: Request, page: int = 1, db: Session = D
     )
 
 
-@app.post("/categories/{category_id}/queue-selected")
+@router.post("/categories/{category_id}/queue-selected")
 def queue_selected(
     category_id: int,
     request: Request,
@@ -540,7 +548,7 @@ def queue_selected(
     )
 
 
-@app.get("/downloads")
+@router.get("/downloads")
 def downloads(request: Request, db: Session = Depends(get_db)):
     videos = (
         db.query(Video)
@@ -555,7 +563,7 @@ def downloads(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@app.get("/downloads/table")
+@router.get("/downloads/table")
 def downloads_table(request: Request, db: Session = Depends(get_db)):
     videos = (
         db.query(Video)
@@ -569,7 +577,7 @@ def downloads_table(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@app.post("/downloads/clear-failed")
+@router.post("/downloads/clear-failed")
 def clear_failed(request: Request, db: Session = Depends(get_db)):
     failed = db.query(Video).filter_by(status="failed").all()
     for video in failed:
@@ -595,7 +603,7 @@ def clear_failed(request: Request, db: Session = Depends(get_db)):
     )
 
 
-@app.post("/downloads/{video_id}/queue")
+@router.post("/downloads/{video_id}/queue")
 def queue_download(video_id: int, request: Request, db: Session = Depends(get_db)):
     """Same start/retry logic as /videos/{id}/queue, but returns a downloads
     table row instead of a latest-listing row -- also used to resume a
@@ -614,7 +622,7 @@ def queue_download(video_id: int, request: Request, db: Session = Depends(get_db
     )
 
 
-@app.post("/downloads/{video_id}/cancel")
+@router.post("/downloads/{video_id}/cancel")
 def cancel_download(video_id: int, request: Request, db: Session = Depends(get_db)):
     video = db.get(Video, video_id)
     if video is not None and video.status == "downloading":
@@ -629,7 +637,7 @@ def cancel_download(video_id: int, request: Request, db: Session = Depends(get_d
     )
 
 
-@app.post("/downloads/{video_id}/delete")
+@router.post("/downloads/{video_id}/delete")
 def delete_download(video_id: int, db: Session = Depends(get_db)):
     """Discards a canceled download's partial file instead of resuming it.
     The video drops out of the downloads list -- it's back to "discovered"
@@ -650,7 +658,7 @@ def delete_download(video_id: int, db: Session = Depends(get_db)):
 ARCHIVE_PAGE_SIZE = 30
 
 
-@app.get("/archive")
+@router.get("/archive")
 def archive(request: Request, page: int = 1, db: Session = Depends(get_db)):
     page = max(page, 1)
     query = (
@@ -685,14 +693,14 @@ def _read_log_tail() -> str:
     return "".join(lines[-LOG_LINES_SHOWN:]) or "Log file is empty."
 
 
-@app.get("/logs")
+@router.get("/logs")
 def logs(request: Request):
     return templates.TemplateResponse(
         "logs.html", {"request": request, "log_text": _read_log_tail(), "active_tab": "settings"}
     )
 
 
-@app.get("/logs/tail")
+@router.get("/logs/tail")
 def logs_tail(request: Request):
     return templates.TemplateResponse(
         "_logs_content.html", {"request": request, "log_text": _read_log_tail()}
@@ -714,12 +722,12 @@ def _settings_context(request: Request, saved: bool = False, error: str | None =
     }
 
 
-@app.get("/settings")
+@router.get("/settings")
 def settings_page(request: Request, saved: bool = False):
     return templates.TemplateResponse("settings.html", _settings_context(request, saved=saved))
 
 
-@app.post("/settings/save")
+@router.post("/settings/save")
 def settings_save(
     request: Request,
     source_base_url: str = Form(...),
@@ -763,3 +771,6 @@ def settings_save(
     settings.set_value("discovery_page_depth", str(discovery_page_depth))
     settings.set_value("max_retries", str(max_retries))
     return RedirectResponse(url=f"{config.BASE_PATH}/settings?saved=1", status_code=303)
+
+
+app.include_router(router, prefix=config.BASE_PATH)

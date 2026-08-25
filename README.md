@@ -47,11 +47,11 @@ Most of these (poll interval, retry limits, concurrency, source host) can also b
 
 ### Serving at a subpath
 
-If you're putting Archivelo behind a reverse proxy at `https://example.org/archivelo` rather than its own domain/subdomain, set `BASE_PATH=/archivelo`. The proxy must **strip** that prefix before forwarding to the container — the app's routes are unprefixed internally; only the links/redirects it generates carry the prefix, so the browser's next request round-trips back through the proxy correctly.
+If you're putting Archivelo behind a reverse proxy at `https://example.org/archivelo` rather than its own domain/subdomain, set `BASE_PATH=/archivelo`. The app owns that prefix internally (the same "URL Base" pattern apps like Sonarr/Radarr use) — a plain forward is enough, **no rewrite/strip rule needed** on the proxy side:
 
 ```nginx
 location /archivelo/ {
-    proxy_pass http://archivelo:8000/;
+    proxy_pass http://archivelo:8000;
 }
 ```
 

@@ -20,9 +20,9 @@ services:
       - SOURCE_BASE_URL=https://tiz-cycling.tv
       # If you're putting this behind a reverse proxy at a subpath (e.g.
       # "https://example.org/archivelo"), set BASE_PATH to that path
-      # ("/archivelo"). The proxy must strip the prefix before forwarding
-      # to this container -- e.g. nginx:
-      #   location /archivelo/ { proxy_pass http://archivelo:8000/; }
+      # ("/archivelo"). The app owns that prefix internally, so a plain
+      # forward is enough -- no rewrite/strip rule needed, e.g. nginx:
+      #   location /archivelo/ { proxy_pass http://archivelo:8000; }
       # Leave empty to serve at the domain root (default).
       - BASE_PATH=
       # Set these to your NAS user's uid/gid (e.g. `id <username>` over
