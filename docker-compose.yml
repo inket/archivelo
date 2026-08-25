@@ -32,3 +32,12 @@ services:
       - PUID=0
       - PGID=0
     restart: unless-stopped
+    # Docker's own capture of the container's stdout/stderr has no size
+    # limit by default and isn't the same thing as the app's own log file
+    # above (/config/app.log, which already rotates itself) -- cap it so a
+    # long-running container doesn't slowly fill the host's disk.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
