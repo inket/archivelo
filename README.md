@@ -26,7 +26,7 @@ docker compose up -d
 
 The app will be available at `http://<host>:8000`. Two volumes get created next to `docker-compose.yml`: `./config` (database + log — small, worth backing up) and `./downloads` (the actual video files — large, point it at a different drive/mount if you want by changing the host-side path in `docker-compose.yml`).
 
-To update later: `docker compose pull && docker compose up -d`.
+To update later: `docker compose pull && docker compose up -d`. `docker-compose.yml` pulls the `latest` tag, which always points at the most recently published [release](https://github.com/inket/archivelo/releases) — not every commit. Pin `image:` to a specific version instead (e.g. `ghcr.io/inket/archivelo:0.1.0`) if you'd rather control updates manually.
 
 ### Configuration
 
@@ -75,7 +75,21 @@ set -a && source .env.local && set +a
 - Discovery and downloads run as background threads inside the same process — no separate worker/queue service.
 - The site's markup is scraped with a mix of `BeautifulSoup` and targeted regexes (some of its HTML is malformed enough that a strict tree parse misses content).
 - Downloads shell out to `yt-dlp` as a subprocess rather than using its Python API, with an independent watchdog thread that kills and retries a download if it stalls — this proved more reliable than relying on yt-dlp's own internal timeouts.
-- Every push to `main` builds and publishes the image to `ghcr.io/inket/archivelo` via [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml) — deploying is just pulling, nothing gets built on the host.
+- Publishing an image to `ghcr.io/inket/archivelo` is decoupled from pushing to `main` — see [Releasing](#releasing) below. Deploying is just pulling; nothing gets built on the host.
+
+## Releasing
+
+Images are built by [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml), triggered only when a **GitHub Release is published** — plain pushes to `main` don't build or publish anything. Versions follow [semver](https://semver.org/); while the project's still early, that means `0.MINOR.PATCH` (bump `MINOR` for features, `PATCH` for fixes), moving to `1.0.0` once it feels stable.
+
+To cut a release:
+
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+gh release create v0.1.0 --generate-notes
+```
+
+That publishes `ghcr.io/inket/archivelo:0.1.0` and moves the `latest` tag to it.
 
 ## License
 
