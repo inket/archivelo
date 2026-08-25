@@ -1,12 +1,14 @@
 # Archivelo
 
-A small, self-hosted archiver for [tiz-cycling.tv](https://tiz-cycling.tv). It browses the site's uploads, lets you subscribe to specific races/categories, and automatically downloads new videos as they're published — via [yt-dlp](https://github.com/yt-dlp/yt-dlp) — into a folder structure on disk you control.
+A small, self-hosted archiver for cycling race videos. It browses a source site's uploads, lets you subscribe to specific races/categories, and automatically downloads new videos as they're published — via [yt-dlp](https://github.com/yt-dlp/yt-dlp) — into a folder structure on disk you control.
 
 Runs as a single Docker container with a small FastAPI + HTMX web UI for tracking discovery and download status.
 
+![Archivelo's Latest Uploads page](docs/screenshot.png)
+
 ## Features
 
-- **Latest Uploads** feed and a **Races & Categories** browser, both scraped live from tiz-cycling.tv
+- **Latest Uploads** feed and a **Races & Categories** browser, both scraped live from the source site
 - **Subscribe** to a category to auto-download new uploads going forward — browsing never triggers a download on its own, only subscribing or an explicit click does
 - **Resumable downloads** — a stuck/stalled download is detected and killed automatically (independent OS-level watchdog, not just yt-dlp's own timeout) and retried with exponential backoff
 - **Cancel / Resume / Delete** for an in-progress download, and **Redownload** for anything already saved
@@ -32,7 +34,7 @@ All of these are set as `environment:` entries in `docker-compose.yml`:
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `SOURCE_BASE_URL` | `https://tiz-cycling.tv` | Site to scrape, in case it ever moves |
+| `SOURCE_BASE_URL` | *(the source site)* | Host to scrape, in case it ever moves |
 | `POLL_INTERVAL_SECONDS` | `900` | How often subscribed categories are checked for new uploads |
 | `RETRY_INTERVAL_SECONDS` | `300` | How often a failed discovery check is retried |
 | `MAX_RETRIES` | `5` | Auto-retry attempts for a failed download before giving up |

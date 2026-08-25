@@ -2,7 +2,7 @@
 {% block content %}
 <a class="back-link" href="{{ base_path }}/categories">&larr; All categories</a>
 <h2>{{ category.name }}</h2>
-<a class="external-link" href="{{ category.url }}" target="_blank" rel="noopener">View on tiz-cycling.tv &#8599;</a>
+<a class="external-link" href="{{ category.url }}" target="_blank" rel="noopener">View source &#8599;</a>
 
 <form class="subscribe-form" method="post" action="{{ base_path }}/categories/{{ category.id }}/save">
   <label>

@@ -2,7 +2,7 @@
 <div id="category-videos">
   <h3>Videos</h3>
   {% if fetch_error %}
-  <p class="empty-state">Couldn't reach tiz-cycling.tv to refresh this category's videos ({{ fetch_error }}). Showing nothing for now &mdash; try reloading.</p>
+  <p class="empty-state">Couldn't reach the source site to refresh this category's videos ({{ fetch_error }}). Showing nothing for now &mdash; try reloading.</p>
   {% endif %}
 
   {% if videos %}
