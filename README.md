@@ -22,12 +22,6 @@ docker compose pull
 docker compose up -d
 ```
 
-This repo (and its image) is currently **private**, so the first `pull` needs a one-time login:
-
-```bash
-echo "<a GitHub PAT with read:packages scope>" | docker login ghcr.io -u inket --password-stdin
-```
-
 The app will be available at `http://<host>:8000`. Two volumes get created next to `docker-compose.yml`: `./config` (database + log — small, worth backing up) and `./downloads` (the actual video files — large, point it at a different drive/mount if you want by changing the host-side path in `docker-compose.yml`).
 
 To update later: `docker compose pull && docker compose up -d`.
