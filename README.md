@@ -16,13 +16,27 @@ Runs as a single Docker container with a small FastAPI + HTMX web UI for trackin
 
 ## Quick start (Docker Compose)
 
+Every push to `main` builds and publishes an image to GHCR via [.github/workflows/docker-publish.yml](.github/workflows/docker-publish.yml), so deploying is just pulling it — no build tools or source checkout needed on the host:
+
 ```bash
-git clone https://github.com/inket/archivelo.git
-cd archivelo
-docker compose up -d --build
+curl -O https://raw.githubusercontent.com/inket/archivelo/main/docker-compose.yml
+docker compose pull
+docker compose up -d
 ```
 
+(Or `git clone` the repo if you'd rather keep the compose file version-controlled locally.)
+
+Since this repo is **private**, the published image is private too — the host pulling it needs to authenticate once:
+
+```bash
+echo "<a GitHub PAT with read:packages scope>" | docker login ghcr.io -u inket --password-stdin
+```
+
+Alternatively, make the `archivelo` package public from its GitHub Packages settings (independent of the repo's own visibility) and skip the login step entirely.
+
 The app will be available at `http://<host>:8000`. Downloaded videos, the database, and logs all live under `./data`, bind-mounted into the container — back that folder up if you care about the archive.
+
+To update to the latest image later: `docker compose pull && docker compose up -d`.
 
 ### Configuration
 
