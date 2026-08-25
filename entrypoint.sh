@@ -1,8 +1,8 @@
 #!/bin/sh
 # Optionally drop from root to a specific PUID/PGID before starting the app,
-# so files written to the /data volume are owned by a real NAS user instead
-# of root. Defaults to staying as root (PUID=0/PGID=0) when unset, matching
-# the container's original behavior.
+# so files written to the /config and /downloads volumes are owned by a
+# real NAS user instead of root. Defaults to staying as root (PUID=0/PGID=0)
+# when unset, matching the container's original behavior.
 set -e
 
 PUID="${PUID:-0}"
@@ -20,6 +20,8 @@ if ! getent passwd "$PUID" >/dev/null 2>&1; then
     useradd -o -u "$PUID" -g "$PGID" -M -s /usr/sbin/nologin appuser
 fi
 
-chown -R "$PUID":"$PGID" /data
+for dir in /config /downloads; do
+    [ -d "$dir" ] && chown -R "$PUID":"$PGID" "$dir"
+done
 
 exec setpriv --reuid="$PUID" --regid="$PGID" --clear-groups "$@"

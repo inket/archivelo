@@ -1,4 +1,6 @@
 data/
+config/
+downloads/
 __pycache__/
 *.pyc
 .venv/

@@ -14,9 +14,12 @@ if BASE_PATH and not BASE_PATH.startswith("/"):
 BASE_PATH = BASE_PATH.rstrip("/")
 
 SOURCE_BASE_URL = os.environ.get("SOURCE_BASE_URL", "https://tiz-cycling.tv").rstrip("/")
-DATABASE_PATH = os.environ.get("DATABASE_PATH", "/data/app.db")
-LOG_PATH = os.environ.get("LOG_PATH", "/data/app.log")
-DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", "/data/downloads")
+# Split across two volumes by default: /config for the database/log (small,
+# worth backing up) and /downloads for the actual video files (large, often
+# wanted on a different/bigger drive). See docker-compose.yml.
+DATABASE_PATH = os.environ.get("DATABASE_PATH", "/config/app.db")
+LOG_PATH = os.environ.get("LOG_PATH", "/config/app.log")
+DOWNLOAD_DIR = os.environ.get("DOWNLOAD_DIR", "/downloads")
 POLL_INTERVAL_SECONDS = int(os.environ.get("POLL_INTERVAL_SECONDS", "900"))
 RETRY_INTERVAL_SECONDS = int(os.environ.get("RETRY_INTERVAL_SECONDS", "300"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))

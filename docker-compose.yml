@@ -5,10 +5,16 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data:/data
+      # Small, worth backing up: the SQLite database and log file.
+      - ./config:/config
+      # Large, and often wanted on a different/bigger drive -- point this
+      # at any host path you like, e.g. an absolute path on another volume:
+      #   - /volume2/archivelo-downloads:/downloads
+      - ./downloads:/downloads
     environment:
-      - DATABASE_PATH=/data/app.db
-      - DOWNLOAD_DIR=/data/downloads
+      - DATABASE_PATH=/config/app.db
+      - LOG_PATH=/config/app.log
+      - DOWNLOAD_DIR=/downloads
       - POLL_INTERVAL_SECONDS=900
       - MAX_CONCURRENT_DOWNLOADS=1
       - SOURCE_BASE_URL=https://tiz-cycling.tv
@@ -18,10 +24,11 @@ services:
       # to this container -- e.g. nginx:
       #   location /archivelo/ { proxy_pass http://archivelo:8000/; }
       # Leave empty to serve at the domain root (default).
-      - BASE_PATH=${BASE_PATH:-}
-      # Set these to your NAS user's uid/gid (e.g. `id user` on Synology,
-      # or check the user's properties in DSM) so downloaded files land
-      # owned by you instead of root. Leave unset/0 to run as root.
-      - PUID=${PUID:-0}
-      - PGID=${PGID:-0}
+      - BASE_PATH=
+      # Set these to your NAS user's uid/gid (e.g. `id <username>` over
+      # SSH, or check the user's properties in your NAS's admin UI) so
+      # downloaded files land owned by you instead of root. Leave both
+      # at 0 to run as root.
+      - PUID=0
+      - PGID=0
     restart: unless-stopped

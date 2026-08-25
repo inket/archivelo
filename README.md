@@ -28,7 +28,7 @@ This repo (and its image) is currently **private**, so the first `pull` needs a 
 echo "<a GitHub PAT with read:packages scope>" | docker login ghcr.io -u inket --password-stdin
 ```
 
-The app will be available at `http://<host>:8000`. Downloaded videos, the database, and logs all live under `./data`, bind-mounted into the container — back that folder up if you care about the archive.
+The app will be available at `http://<host>:8000`. Two volumes get created next to `docker-compose.yml`: `./config` (database + log — small, worth backing up) and `./downloads` (the actual video files — large, point it at a different drive/mount if you want by changing the host-side path in `docker-compose.yml`).
 
 To update later: `docker compose pull && docker compose up -d`.
 
@@ -44,7 +44,7 @@ All of these are set as `environment:` entries in `docker-compose.yml`:
 | `MAX_RETRIES` | `5` | Auto-retry attempts for a failed download before giving up |
 | `MAX_CONCURRENT_DOWNLOADS` | `1` | How many downloads run at once |
 | `DISCOVERY_PAGE_DEPTH` | `3` | How many listing pages deep to check per category |
-| `PUID` / `PGID` | `0` / `0` (root) | Set to your host user's uid/gid so files under `./data` aren't owned by root |
+| `PUID` / `PGID` | `0` / `0` (root) | Set to your host user's uid/gid so files under `./config` and `./downloads` aren't owned by root |
 | `BASE_PATH` | *(empty)* | Set if serving behind a reverse proxy at a subpath, e.g. `/archivelo` for `https://example.org/archivelo` — see below |
 
 Most of these (poll interval, retry limits, concurrency, source host) can also be changed later from the **Settings** page in the UI without restarting the container — the env var only supplies the initial value.
