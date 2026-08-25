@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ base_path }}/categories">&larr; All categories</a>
+<h2>{{ category.name }}</h2>
+<a class="external-link" href="{{ category.url }}" target="_blank" rel="noopener">View on tiz-cycling.tv &#8599;</a>
+
+<form class="subscribe-form" method="post" action="{{ base_path }}/categories/{{ category.id }}/save">
+  <label>
+    <input type="checkbox" name="subscribed" {% if category.subscribed %}checked{% endif %}>
+    Auto-download new uploads in this category
+  </label>
+  <button type="submit" class="btn btn-primary">Save</button>
+  {% if saved %}<span class="save-confirmation">&#10003; Saved</span>{% endif %}
+</form>
+
+{% include "_category_content.html" %}
+{% endblock %}

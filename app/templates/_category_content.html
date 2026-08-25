@@ -1,0 +1,25 @@
+<div id="category-content">
+  <div class="worker-status {% if category_is_checking %}worker-status-checking{% elif last_checked_at and not last_check_ok %}worker-status-error{% elif last_checked_at %}worker-status-ok{% else %}worker-status-neutral{% endif %}">
+    <span class="dot"></span>
+    {% if category_is_checking %}
+      Checking this category&hellip;
+    {% elif not last_checked_at %}
+      Not checked yet &mdash; showing whatever's already been discovered
+    {% elif not last_check_ok %}
+      Last check <strong>failed</strong> {{ last_check_ago }}{% if last_check_error %} &mdash; {{ last_check_error }}{% endif %}
+    {% else %}
+      Last checked <strong>{{ last_check_ago }}</strong>
+    {% endif %}
+    <button
+      class="icon-btn"
+      title="Check this category now"
+      hx-post="{{ base_path }}/categories/{{ category.id }}/check-now?page={{ page }}"
+      hx-target="#category-content"
+      hx-swap="outerHTML"
+      hx-disabled-elt="this"
+      {% if category_is_checking %}disabled{% endif %}
+    >&#8635;</button>
+  </div>
+
+  {% include "_category_videos.html" %}
+</div>

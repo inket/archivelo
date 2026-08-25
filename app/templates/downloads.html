@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Downloads</h2>
+<p class="subtitle">Live status of the worker: queued, in-progress, finished, and failed downloads. Updates every 3 seconds.</p>
+
+<button
+  class="btn btn-secondary"
+  style="margin-bottom: 20px;"
+  hx-post="{{ base_path }}/downloads/clear-failed"
+  hx-target="#downloads-table"
+  hx-swap="innerHTML"
+  hx-confirm="Clear all failed downloads? They'll go back to normal and you can retry them anytime from Latest Uploads."
+>Clear failed</button>
+
+<div id="downloads-table" hx-get="{{ base_path }}/downloads/table" hx-trigger="every 3s" hx-swap="innerHTML">
+  {% include "_downloads_table.html" %}
+</div>
+{% endblock %}

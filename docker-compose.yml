@@ -1,0 +1,27 @@
+services:
+  web:
+    build: .
+    container_name: archivelo
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/data
+    environment:
+      - DATABASE_PATH=/data/app.db
+      - DOWNLOAD_DIR=/data/downloads
+      - POLL_INTERVAL_SECONDS=900
+      - MAX_CONCURRENT_DOWNLOADS=1
+      - SOURCE_BASE_URL=https://tiz-cycling.tv
+      # If you're putting this behind a reverse proxy at a subpath (e.g.
+      # "https://example.org/archivelo"), set BASE_PATH to that path
+      # ("/archivelo"). The proxy must strip the prefix before forwarding
+      # to this container -- e.g. nginx:
+      #   location /archivelo/ { proxy_pass http://archivelo:8000/; }
+      # Leave empty to serve at the domain root (default).
+      - BASE_PATH=${BASE_PATH:-}
+      # Set these to your NAS user's uid/gid (e.g. `id user` on Synology,
+      # or check the user's properties in DSM) so downloaded files land
+      # owned by you instead of root. Leave unset/0 to run as root.
+      - PUID=${PUID:-0}
+      - PGID=${PGID:-0}
+    restart: unless-stopped

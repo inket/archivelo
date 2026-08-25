@@ -1,0 +1,60 @@
+{% if video %}
+<tr id="download-row-{{ video.id }}">
+  <td>
+    <span style="display: inline-flex; align-items: center; gap: 2px;">
+      <a href="{{ base_path }}/videos/{{ video.id }}">{{ video.title }}</a>
+      <a href="{{ video.url }}" target="_blank" rel="noopener" class="icon-btn" title="View on tiz-cycling.tv" style="width: 18px; height: 18px; font-size: 13px; flex-shrink: 0;">&#8599;</a>
+    </span>
+    <br>
+    <small>{% if video.category %}<a href="{{ base_path }}/categories/{{ video.category.id }}">{{ video.category.name }}</a>{% endif %}</small>
+  </td>
+  <td>
+    <span class="status-badge status-{{ video.status }}" style="display: inline-flex; align-items: center; gap: 4px;">
+      {%- if video.status == "queued" %}&#9201;{% elif video.status == "downloaded" %}{% include "_icon_check.html" %}{% endif -%}
+      {{ "Paused" if video.status == "canceled" else video.status|capitalize }}
+    </span>
+    {% if video.status == "failed" %}
+      {% if video.error_message %}<br><small>{{ video.error_message[:200] }}</small>{% endif %}
+      {% if video.next_retry_at %}
+        <br><small>Retrying in {{ humanize_until(video.next_retry_at) }} (attempt {{ video.retry_count + 1 }})</small>
+      {% elif video.retry_count > 0 %}
+        <br><small>Gave up after {{ video.retry_count }} attempt{{ "" if video.retry_count == 1 else "s" }} &mdash; retry manually</small>
+      {% endif %}
+    {% endif %}
+  </td>
+  <td>
+    {% if video.status == "downloading" %}
+      <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ video.progress_percent }}%;"></div></div>
+      <small>{{ video.progress_percent }}% {{ video.speed_label or "" }} {{ ("ETA " ~ video.eta_label) if video.eta_label else "" }}</small>
+    {% elif video.status == "downloaded" %}
+      <small>{{ display_file_path(video.file_path) }}</small>
+    {% elif video.status == "canceled" %}
+      <small class="empty-state">Paused at {{ video.progress_percent }}%</small>
+    {% endif %}
+  </td>
+  <td>
+    {% if video.status == "failed" %}
+    <button hx-post="{{ base_path }}/downloads/{{ video.id }}/queue" hx-target="closest tr" hx-swap="outerHTML" class="status-action status-action-failed">&#8635; Retry</button>
+    {% elif video.status == "downloading" %}
+    <button
+      hx-post="{{ base_path }}/downloads/{{ video.id }}/cancel"
+      hx-target="closest tr"
+      hx-swap="outerHTML"
+      hx-confirm="Cancel this download? You can resume from where it left off, or delete the partial file."
+      class="status-action status-action-failed"
+    >Cancel</button>
+    {% elif video.status == "canceled" %}
+    <span style="display: inline-flex; gap: 6px;">
+      <button hx-post="{{ base_path }}/downloads/{{ video.id }}/queue" hx-target="closest tr" hx-swap="outerHTML" class="status-action status-action-default">Resume</button>
+      <button
+        hx-post="{{ base_path }}/downloads/{{ video.id }}/delete"
+        hx-target="closest tr"
+        hx-swap="outerHTML"
+        hx-confirm="Delete the partial download? This can't be undone."
+        class="status-action status-action-failed"
+      >Delete</button>
+    </span>
+    {% endif %}
+  </td>
+</tr>
+{% endif %}

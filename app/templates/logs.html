@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ base_path }}/settings">&larr; Settings</a>
+<h2>Logs</h2>
+<p class="subtitle">Last 500 lines of the server log (scraping, worker, and download activity). Updates every 5 seconds.</p>
+
+<div id="log-container" hx-get="{{ base_path }}/logs/tail" hx-trigger="every 5s" hx-swap="innerHTML">
+  {% include "_logs_content.html" %}
+</div>
+
+<script>
+  function scrollLogToBottom() {
+    var el = document.getElementById("log-text");
+    if (el) el.scrollTop = el.scrollHeight;
+  }
+  document.addEventListener("htmx:afterSwap", function (evt) {
+    if (evt.target.id === "log-container") scrollLogToBottom();
+  });
+  scrollLogToBottom();
+</script>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Settings</h2>
+<p class="subtitle">These take effect immediately &mdash; no restart needed. The background worker picks up new intervals on its next wait cycle.</p>
+
+{% if error %}
+<p class="empty-state" style="color: #b91c1c;">{{ error }}</p>
+{% endif %}
+
+<form method="post" action="{{ base_path }}/settings/save">
+  <div class="settings-grid">
+    <div class="settings-label">tiz-cycling.tv host</div>
+    <input type="text" name="source_base_url" value="{{ source_base_url }}" placeholder="https://tiz-cycling.tv">
+    <div class="settings-help">Change this if the site ever moves to a different domain.</div>
+
+    <div class="settings-label">Check interval (minutes)</div>
+    <input type="text" inputmode="numeric" name="poll_interval_minutes" value="{{ poll_interval_minutes }}">
+    <div class="settings-help">How often to scrape the homepage and subscribed categories for new uploads.</div>
+
+    <div class="settings-label">Retry interval on failure (minutes)</div>
+    <input type="text" inputmode="numeric" name="retry_interval_minutes" value="{{ retry_interval_minutes }}">
+    <div class="settings-help">How often to retry after a failed check, until it succeeds again.</div>
+
+    <div class="settings-label">Max download retries</div>
+    <input type="text" inputmode="numeric" name="max_retries" value="{{ max_retries }}">
+    <div class="settings-help">How many times to auto-retry a failed download (starting at 30s, doubling each time) before giving up and waiting for a manual retry.</div>
+
+    <div class="settings-label">Max concurrent downloads</div>
+    <input type="text" inputmode="numeric" name="max_concurrent_downloads" value="{{ max_concurrent_downloads }}">
+    <div class="settings-help">How many videos to download at the same time.</div>
+
+    <div class="settings-label">Pages scanned per category</div>
+    <input type="text" inputmode="numeric" name="discovery_page_depth" value="{{ discovery_page_depth }}">
+    <div class="settings-help">How many listing pages deep to look when checking the homepage feed or a subscribed category (~12 videos/page).</div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 14px;">
+    <button type="submit" class="btn btn-primary">Save</button>
+    {% if saved %}<span class="save-confirmation">&#10003; Saved</span>{% endif %}
+  </div>
+</form>
+
+<h3>Logs</h3>
+<p class="subtitle">Server log &mdash; scraping, worker, and download activity.</p>
+<a class="btn btn-secondary" href="{{ base_path }}/logs" style="text-decoration: none;">View logs</a>
+{% endblock %}

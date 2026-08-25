@@ -1,0 +1,10 @@
+{% if category %}
+<input
+  type="checkbox"
+  id="cat-{{ category.id }}"
+  hx-post="{{ base_path }}/categories/{{ category.id }}/subscribe"
+  hx-target="this"
+  hx-swap="outerHTML"
+  {% if category.subscribed %}checked{% endif %}
+>
+{% endif %}

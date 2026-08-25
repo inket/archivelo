@@ -1,0 +1,10 @@
+<table class="compact">
+  <thead><tr><th>Title</th><th>Status</th><th>Progress</th><th></th></tr></thead>
+  <tbody>
+    {% for video in videos %}
+      {% include "_downloads_row.html" %}
+    {% else %}
+    <tr><td colspan="4" class="empty-state">Nothing queued or downloaded yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>

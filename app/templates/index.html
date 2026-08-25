@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Latest</h2>
+<p class="subtitle">Scraped from tiz-cycling.tv's homepage feed. Click "Download" on anything you want archived right away, or subscribe to a whole race/tour on the <a href="{{ base_path }}/categories">Races &amp; Categories</a> page for automatic downloads.</p>
+
+<div id="latest-content" hx-get="{{ base_path }}/latest/refresh?page={{ page }}" hx-trigger="every 15s" hx-swap="innerHTML">
+  {% include "_latest_content.html" %}
+</div>
+{% endblock %}

@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Races &amp; Categories</h2>
+<p class="subtitle">Tick a race to auto-download new uploads that appear under it (e.g. each stage of a Grand Tour as it's posted). The background worker polls subscribed categories every few minutes and queues anything new. Search to narrow the list &mdash; it covers races, monuments, national championships, and year-specific archives.</p>
+
+<h3 style="margin-top: 0;">Monitored ({{ monitored|length }})</h3>
+<table class="compact">
+  <thead><tr><th></th><th>Category</th></tr></thead>
+  <tbody>
+    {% for category in monitored %}
+    <tr>
+      <td>{% include "_category_toggle.html" %}</td>
+      <td><a href="{{ base_path }}/categories/{{ category.id }}">{{ category.name }}</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="2" class="empty-state">Nothing is being auto-downloaded yet &mdash; search below and tick a race to start monitoring it.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h3>Search</h3>
+<form class="search-form" method="get" action="{{ base_path }}/categories">
+  <input type="search" name="q" value="{{ q }}" placeholder="Search races, e.g. &quot;Tour de France&quot; or &quot;2025&quot;" autofocus>
+</form>
+
+{% if truncated %}
+<p class="subtitle">Showing the first {{ categories|length }} matches &mdash; narrow your search to see more.</p>
+{% endif %}
+
+<table class="compact">
+  <thead><tr><th></th><th>Category</th></tr></thead>
+  <tbody>
+    {% for category in categories %}
+    <tr>
+      <td>{% include "_category_toggle.html" %}</td>
+      <td><a href="{{ base_path }}/categories/{{ category.id }}">{{ category.name }}</a>{% if category.subscribed %} <small>(auto-download on)</small>{% endif %}</td>
+    </tr>
+    {% else %}
+    <tr><td colspan="2" class="empty-state">
+      {% if q %}No categories match "{{ q }}".{% else %}There are thousands of races/years in the nav, so type at least 2 characters to search (e.g. "Giro" or "2025") instead of browsing them all.{% endif %}
+    </td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

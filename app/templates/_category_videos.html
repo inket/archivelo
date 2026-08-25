@@ -1,0 +1,50 @@
+{% set select_mode = true %}
+<div id="category-videos">
+  <h3>Videos</h3>
+  {% if fetch_error %}
+  <p class="empty-state">Couldn't reach tiz-cycling.tv to refresh this category's videos ({{ fetch_error }}). Showing nothing for now &mdash; try reloading.</p>
+  {% endif %}
+
+  {% if videos %}
+  <div style="display: flex; gap: 10px; margin-bottom: 14px;">
+    <button
+      class="btn btn-secondary"
+      hx-post="{{ base_path }}/categories/{{ category.id }}/queue-all?page={{ page }}"
+      hx-target="#category-videos"
+      hx-swap="outerHTML"
+      hx-disabled-elt="this"
+      hx-confirm="Queue every video on this page ({{ videos|length }} total) for download?"
+    >Queue all on this page</button>
+    <button
+      type="button"
+      class="btn btn-primary"
+      hx-post="{{ base_path }}/categories/{{ category.id }}/queue-selected?page={{ page }}"
+      hx-include="#category-videos [name='video_ids']:checked"
+      hx-target="#category-videos"
+      hx-swap="outerHTML"
+      hx-disabled-elt="this"
+    >Download selected</button>
+  </div>
+  {% endif %}
+
+  <table class="compact">
+    <thead>
+      <tr>
+        <th><input type="checkbox" onclick="document.querySelectorAll('.video-select').forEach(function(cb){cb.checked = this.checked}, this)"></th>
+        <th></th><th>Title</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for video in videos %}
+        {% include "_video_row.html" %}
+      {% else %}
+      <tr><td colspan="4" class="empty-state">{% if not fetch_error %}No videos found for this category.{% endif %}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="page-nav">
+    <span>{% if page > 1 %}<a href="{{ base_path }}/categories/{{ category.id }}?page={{ page - 1 }}">&larr; Newer</a>{% endif %}</span>
+    <span>{% if has_next %}<a href="{{ base_path }}/categories/{{ category.id }}?page={{ page + 1 }}">Older &rarr;</a>{% endif %}</span>
+  </div>
+</div>

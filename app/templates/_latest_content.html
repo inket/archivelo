@@ -1,0 +1,37 @@
+<div class="worker-status {% if is_checking %}worker-status-checking{% elif not last_check_ok %}worker-status-error{% elif last_check_stale %}worker-status-warn{% else %}worker-status-ok{% endif %}">
+  <span class="dot"></span>
+  {% if is_checking %}
+    Checking for new uploads&hellip;
+  {% elif not last_check_ok %}
+    Last check <strong>failed</strong> {{ last_check_ago }}{% if last_check_error %} &mdash; {{ last_check_error }}{% endif %} &middot; retrying every {{ retry_interval_minutes }} min
+  {% elif last_check_stale %}
+    Last checked <strong>{{ last_check_ago }}</strong> &mdash; expected every {{ poll_interval_minutes }} min, this looks stale
+  {% else %}
+    Last checked <strong>{{ last_check_ago }}</strong> &middot; checks every {{ poll_interval_minutes }} min
+  {% endif %}
+  <button
+    class="icon-btn"
+    title="Check now"
+    hx-post="{{ base_path }}/check-now?page={{ page }}"
+    hx-target="#latest-content"
+    hx-swap="innerHTML"
+    hx-disabled-elt="this"
+    {% if is_checking %}disabled{% endif %}
+  >&#8635;</button>
+</div>
+
+<table class="compact">
+  <thead><tr><th></th><th>Title</th><th></th></tr></thead>
+  <tbody>
+    {% for video in videos %}
+      {% include "_video_row.html" %}
+    {% else %}
+      <tr><td colspan="3" class="empty-state">No videos discovered yet &mdash; the background worker runs shortly after startup.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="page-nav">
+  <span>{% if page > 1 %}<a href="{{ base_path }}/?page={{ page - 1 }}">&larr; Newer</a>{% endif %}</span>
+  <span>{% if has_next %}<a href="{{ base_path }}/?page={{ page + 1 }}">Older &rarr;</a>{% endif %}</span>
+</div>

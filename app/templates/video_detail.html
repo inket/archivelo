@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+{% block content %}
+<a class="back-link" href="{{ base_path }}/">&larr; Latest Uploads</a>
+<h2>{{ video.title }}</h2>
+<a class="external-link" href="{{ video.url }}" target="_blank" rel="noopener">View on tiz-cycling.tv &#8599;</a>
+
+<div style="display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap-reverse;">
+  <div style="flex: 1 1 480px; min-width: 0;">
+    <h3 style="margin-top: 0;">Playback</h3>
+    {% if video.status == "downloading" %}
+      <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ video.progress_percent }}%;"></div></div>
+      <p class="subtitle">{{ video.progress_percent }}% downloaded{% if video.speed_label %} &middot; {{ video.speed_label }}{% endif %}{% if video.eta_label %} &middot; ETA {{ video.eta_label }}{% endif %}</p>
+    {% elif video.status == "downloaded" %}
+      <video id="video-player" controls preload="metadata" style="width: 100%; border-radius: var(--radius); background: #000; display: block;" src="{{ base_path }}/videos/{{ video.id }}/file"></video>
+      <p class="subtitle" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+        <span>Tip: with the player focused, use &larr;/&rarr; to skip 5s, Space to play/pause.</span>
+        <form method="post" action="{{ base_path }}/videos/{{ video.id }}/redownload" onsubmit="return confirm('Delete the current file and download it again?');" style="flex-shrink: 0;">
+          <button type="submit" class="status-action status-action-failed">Redownload</button>
+        </form>
+      </p>
+      <script>
+        (function () {
+          var player = document.getElementById("video-player");
+          if (!player) return;
+          var SKIP_SECONDS = 5;
+          document.addEventListener("keydown", function (e) {
+            var tag = (document.activeElement && document.activeElement.tagName) || "";
+            if (tag === "INPUT" || tag === "TEXTAREA") return;
+            if (e.key === "ArrowLeft") {
+              player.currentTime = Math.max(0, player.currentTime - SKIP_SECONDS);
+              e.preventDefault();
+            } else if (e.key === "ArrowRight") {
+              player.currentTime = Math.min(player.duration || Infinity, player.currentTime + SKIP_SECONDS);
+              e.preventDefault();
+            }
+          });
+
+          // Remember playback position, so reopening this page resumes
+          // where you left off instead of starting over.
+          var resumeAt = {{ video.watch_position_seconds }};
+          player.addEventListener("loadedmetadata", function () {
+            if (resumeAt > 1 && resumeAt < player.duration - 2) {
+              player.currentTime = resumeAt;
+            }
+          });
+
+          function savePosition(pos) {
+            var body = new Blob(["position=" + encodeURIComponent(pos)], { type: "application/x-www-form-urlencoded" });
+            navigator.sendBeacon("{{ base_path }}/videos/{{ video.id }}/position", body);
+          }
+
+          var lastSaveAt = 0;
+          player.addEventListener("timeupdate", function () {
+            var now = Date.now();
+            if (now - lastSaveAt > 5000) {
+              lastSaveAt = now;
+              savePosition(player.currentTime);
+            }
+          });
+          player.addEventListener("pause", function () { savePosition(player.currentTime); });
+          player.addEventListener("ended", function () { savePosition(0); });
+          window.addEventListener("beforeunload", function () { savePosition(player.currentTime); });
+        })();
+      </script>
+    {% elif video.status == "queued" %}
+      <p class="empty-state">Queued &mdash; waiting for the download worker.</p>
+    {% elif video.status == "canceled" %}
+      <p class="empty-state">Paused at {{ video.progress_percent }}% &mdash; resume to continue from where it left off, or delete the partial file.</p>
+      <span style="display: inline-flex; gap: 8px;">
+        <form method="post" action="{{ base_path }}/videos/{{ video.id }}/queue-redirect">
+          <button type="submit" class="btn btn-primary">Resume</button>
+        </form>
+        <form method="post" action="{{ base_path }}/videos/{{ video.id }}/delete-redirect" onsubmit="return confirm('Delete the partial download? This can\'t be undone.');">
+          <button type="submit" class="btn btn-secondary">Delete</button>
+        </form>
+      </span>
+    {% elif video.status == "failed" %}
+      <p class="empty-state">Download failed{% if video.error_message %}: {{ video.error_message }}{% endif %}</p>
+      <form method="post" action="{{ base_path }}/videos/{{ video.id }}/queue-redirect">
+        <button type="submit" class="btn btn-secondary">Retry</button>
+      </form>
+    {% else %}
+      <p class="empty-state">Not downloaded yet.</p>
+      <form method="post" action="{{ base_path }}/videos/{{ video.id }}/queue-redirect">
+        <button type="submit" class="btn btn-primary">Download</button>
+      </form>
+    {% endif %}
+  </div>
+
+  <div style="flex: 0 0 260px;">
+    <h3 style="margin-top: 0;">Details</h3>
+    <table class="compact">
+      <tbody>
+        <tr>
+          <td style="color: var(--text-muted);">Status</td>
+          <td>
+            {% if video.status == "queued" %}
+              <span class="status-badge status-queued">&#9201; Queued</span>
+            {% elif video.status == "downloading" %}
+              <span class="status-badge status-downloading">{{ video.progress_percent }}%</span>
+            {% elif video.status == "downloaded" %}
+              <span class="status-badge status-downloaded" style="display: inline-flex; align-items: center; gap: 4px;">{% include "_icon_check.html" %}Downloaded</span>
+            {% elif video.status == "failed" %}
+              <span class="status-badge status-failed">Failed</span>
+            {% elif video.status == "canceled" %}
+              <span class="status-badge status-canceled">Paused</span>
+            {% else %}
+              <span class="status-badge status-discovered">Discovered</span>
+            {% endif %}
+          </td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-muted);">Category</td>
+          <td>{% if video.category %}<a href="{{ base_path }}/categories/{{ video.category.id }}">{{ video.category.name }}</a>{% else %}<span class="empty-state">not identified</span>{% endif %}</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-muted);">Discovered</td>
+          <td>{% if video.discovered_at %}<span class="local-datetime" data-utc="{{ video.discovered_at.isoformat() }}Z">{{ video.discovered_at.strftime("%b %-d, %Y %H:%M UTC") }}</span>{% else %}&mdash;{% endif %}</td>
+        </tr>
+        {% if video.status == "downloaded" %}
+        <tr>
+          <td style="color: var(--text-muted);">Downloaded</td>
+          <td>{% if video.finished_at %}<span class="local-datetime" data-utc="{{ video.finished_at.isoformat() }}Z">{{ video.finished_at.strftime("%b %-d, %Y %H:%M UTC") }}</span>{% else %}&mdash;{% endif %}</td>
+        </tr>
+        <tr>
+          <td style="color: var(--text-muted);">File</td>
+          <td style="word-break: break-all;">{{ display_file_path(video.file_path) }}</td>
+        </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

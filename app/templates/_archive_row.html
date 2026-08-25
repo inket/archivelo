@@ -1,0 +1,20 @@
+{% if video %}
+<tr id="video-row-{{ video.id }}">
+  <td><img class="thumb" src="{{ video.thumbnail_url }}" alt=""></td>
+  <td>
+    <span style="display: inline-flex; align-items: center; gap: 2px;">
+      <a href="{{ base_path }}/videos/{{ video.id }}">{{ video.title }}</a>
+      <a href="{{ video.url }}" target="_blank" rel="noopener" class="icon-btn" title="View on tiz-cycling.tv" style="width: 18px; height: 18px; font-size: 13px; flex-shrink: 0;">&#8599;</a>
+    </span>
+    <br>
+    <small>
+      Downloaded {{ humanize_ago(video.finished_at) }}
+      &middot; Uploaded {{ humanize_ago(video.published_at) if video.published_at else (video.published_label or "unknown") }}
+      {% if video.category %} &middot; <a href="{{ base_path }}/categories/{{ video.category.id }}">{{ video.category.name }}</a>{% endif %}
+    </small>
+  </td>
+  <td>
+    <span class="status-badge status-downloaded" style="display: inline-flex; align-items: center; gap: 4px;">{% include "_icon_check.html" %}Downloaded</span>
+  </td>
+</tr>
+{% endif %}

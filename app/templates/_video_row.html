@@ -1,0 +1,38 @@
+{% if video %}
+<tr id="video-row-{{ video.id }}">
+  {% if select_mode %}
+  <td>
+    {% if video.status in ("discovered", "failed", "skipped") %}
+    <input type="checkbox" name="video_ids" value="{{ video.id }}" class="video-select">
+    {% endif %}
+  </td>
+  {% endif %}
+  <td><img class="thumb" src="{{ video.thumbnail_url }}" alt=""></td>
+  <td>
+    <span style="display: inline-flex; align-items: center; gap: 2px;">
+      <a href="{{ base_path }}/videos/{{ video.id }}">{{ video.title }}</a>
+      <a href="{{ video.url }}" target="_blank" rel="noopener" class="icon-btn" title="View on tiz-cycling.tv" style="width: 18px; height: 18px; font-size: 13px; flex-shrink: 0;">&#8599;</a>
+    </span>
+    <br>
+    <small>{{ humanize_ago(video.published_at) if video.published_at else (video.published_label or "") }}{% if video.category %} &middot; <a href="{{ base_path }}/categories/{{ video.category.id }}">{{ video.category.name }}</a>{% endif %}</small>
+  </td>
+  <td>
+    {% if video.status in ("discovered", "failed", "skipped") %}
+    <button
+      hx-post="{{ base_path }}/videos/{{ video.id }}/queue"
+      hx-target="#video-row-{{ video.id }}"
+      hx-swap="outerHTML"
+      class="status-action status-action-{{ 'failed' if video.status == 'failed' else 'default' }}"
+    >{% if video.status == "failed" %}&#8635; Retry{% else %}Download{% endif %}</button>
+    {% elif video.status == "queued" %}
+      <span class="status-badge status-queued">&#9201; Queued</span>
+    {% elif video.status == "downloading" %}
+      <span class="status-badge status-downloading">{{ video.progress_percent }}%</span>
+    {% elif video.status == "downloaded" %}
+      <span class="status-badge status-downloaded" style="display: inline-flex; align-items: center; gap: 4px;">{% include "_icon_check.html" %}Downloaded</span>
+    {% elif video.status == "canceled" %}
+      <span class="status-badge status-canceled">Paused</span>
+    {% endif %}
+  </td>
+</tr>
+{% endif %}

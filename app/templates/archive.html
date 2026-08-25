@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Archive</h2>
+<p class="subtitle">{{ total }} video{{ "" if total == 1 else "s" }} downloaded and saved so far, newest downloads first.</p>
+
+<table class="compact">
+  <thead><tr><th></th><th>Title</th><th></th></tr></thead>
+  <tbody>
+    {% for video in videos %}
+      {% include "_archive_row.html" %}
+    {% else %}
+      <tr><td colspan="3" class="empty-state">Nothing downloaded yet. Click "Download" on a video from Latest Uploads, or subscribe to a race on the Races &amp; Categories page.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="page-nav">
+  <span>{% if page > 1 %}<a href="{{ base_path }}/archive?page={{ page - 1 }}">&larr; Newer</a>{% endif %}</span>
+  <span>{% if has_next %}<a href="{{ base_path }}/archive?page={{ page + 1 }}">Older &rarr;</a>{% endif %}</span>
+</div>
+{% endblock %}
