@@ -16,6 +16,9 @@ DEFAULTS = {
     "max_concurrent_downloads": str(config.MAX_CONCURRENT_DOWNLOADS),
     "discovery_page_depth": str(config.DISCOVERY_PAGE_DEPTH),
     "max_retries": str(config.MAX_RETRIES),
+    "pushover_user_key": config.PUSHOVER_USER_KEY,
+    "pushover_api_token": config.PUSHOVER_API_TOKEN,
+    "public_url": config.PUBLIC_URL,
 }
 
 _lock = threading.Lock()
@@ -81,3 +84,15 @@ def discovery_page_depth() -> int:
 
 def max_retries() -> int:
     return get_int("max_retries")
+
+
+def pushover_user_key() -> str:
+    return get("pushover_user_key").strip()
+
+
+def pushover_api_token() -> str:
+    return get("pushover_api_token").strip()
+
+
+def public_url() -> str:
+    return get("public_url").rstrip("/")

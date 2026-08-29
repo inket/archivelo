@@ -1,13 +1,10 @@
 import os
 
 # Path prefix the app is served under behind a reverse proxy, e.g. "/archivelo"
-# for "https://example.org/archivelo". The proxy is expected to STRIP this
-# prefix before forwarding to the container (e.g. nginx
-# `location /archivelo/ { proxy_pass http://backend:8000/; }`) -- the app's
-# own routes stay unprefixed internally, but every link/redirect it
-# generates includes this prefix so the browser's next request round-trips
-# back through the proxy correctly. Empty (default) means served at the
-# domain root, unchanged from before this setting existed.
+# for "https://example.org/archivelo". The app owns this prefix internally
+# (all routes are registered under it, see main.py's router mount) -- a
+# plain forward from the proxy is enough, no rewrite/strip rule needed.
+# Empty (default) means served at the domain root.
 BASE_PATH = os.environ.get("BASE_PATH", "").strip()
 if BASE_PATH and not BASE_PATH.startswith("/"):
     BASE_PATH = "/" + BASE_PATH
@@ -25,6 +22,17 @@ RETRY_INTERVAL_SECONDS = int(os.environ.get("RETRY_INTERVAL_SECONDS", "300"))
 MAX_RETRIES = int(os.environ.get("MAX_RETRIES", "5"))
 MAX_CONCURRENT_DOWNLOADS = int(os.environ.get("MAX_CONCURRENT_DOWNLOADS", "1"))
 DISCOVERY_PAGE_DEPTH = int(os.environ.get("DISCOVERY_PAGE_DEPTH", "3"))
+
+# Optional: push notifications (via Pushover) when a download finishes or
+# gives up after exhausting retries. Both empty means notifications are off.
+PUSHOVER_USER_KEY = os.environ.get("PUSHOVER_USER_KEY", "")
+PUSHOVER_API_TOKEN = os.environ.get("PUSHOVER_API_TOKEN", "")
+# The full externally-reachable URL for this instance (whatever you'd type
+# in a browser to reach it -- including BASE_PATH if any, e.g.
+# "https://example.org/archivelo"), used to build the "open this video"
+# link in notifications. Left empty, notifications are sent without a link.
+PUBLIC_URL = os.environ.get("PUBLIC_URL", "").rstrip("/")
+
 USER_AGENT = os.environ.get(
     "SCRAPER_USER_AGENT",
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "

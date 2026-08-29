@@ -8,7 +8,7 @@ import subprocess
 import sys
 import threading
 
-from app import config, scraper, settings
+from app import config, notifications, scraper, settings
 from app.db import SessionLocal
 from app.models import Video
 
@@ -93,6 +93,7 @@ def _mark_failed(video_id: int, title: str, error_message: str, retry_count: int
     if next_retry_count >= settings.max_retries():
         next_retry_at = None
         log.warning("Giving up on %r after %d attempts: %s", title, next_retry_count, error_message)
+        notifications.notify_download_failed(video_id, title, error_message)
     else:
         backoff = min(BASE_RETRY_SECONDS * (2 ** retry_count), MAX_RETRY_SECONDS)
         next_retry_at = datetime.datetime.utcnow() + datetime.timedelta(seconds=backoff)
@@ -257,6 +258,7 @@ def download_video(video_id: int) -> None:
         _cancel_requested.discard(video_id)
 
     log.info("Started download: %r", title)
+    notifications.notify_download_started(video_id, title)
     _update(video_id, status="downloading", progress_percent=0.0, error_message=None)
 
     try:
@@ -293,6 +295,7 @@ def download_video(video_id: int) -> None:
             final_path = _find_downloaded_file(out_dir, title_prefix)
 
         log.info("Finished download: %r", title)
+        notifications.notify_download_finished(video_id, title)
         _update(
             video_id,
             status="downloaded",

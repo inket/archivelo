@@ -1,23 +1,33 @@
 {% extends "base.html" %}
 {% block content %}
-<a class="back-link" href="{{ base_path }}/">&larr; Latest Uploads</a>
-<h2>{{ video.title }}</h2>
-<a class="external-link" href="{{ video.url }}" target="_blank" rel="noopener">View source &#8599;</a>
+<div class="theater-hide">
+  <a class="back-link" href="{{ base_path }}/">&larr; Latest Uploads</a>
+  <h2>{{ video.title }}</h2>
+  <a class="external-link" href="{{ video.url }}" target="_blank" rel="noopener">View source &#8599;</a>
+</div>
 
 <div style="display: flex; gap: 32px; align-items: flex-start; flex-wrap: wrap-reverse;">
   <div style="flex: 1 1 480px; min-width: 0;">
-    <h3 style="margin-top: 0;">Playback</h3>
+    <h3 class="theater-hide" style="margin-top: 0;">Playback</h3>
     {% if video.status == "downloading" %}
       <div class="progress-bar"><div class="progress-bar-fill" style="width: {{ video.progress_percent }}%;"></div></div>
       <p class="subtitle">{{ video.progress_percent }}% downloaded{% if video.speed_label %} &middot; {{ video.speed_label }}{% endif %}{% if video.eta_label %} &middot; ETA {{ video.eta_label }}{% endif %}</p>
     {% elif video.status == "downloaded" %}
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+        <button type="button" id="theater-toggle" class="status-action status-action-default" title="Bigger player, less clutter -- no fullscreen needed">
+          <svg width="13" height="13" viewBox="0 0 16 16" style="margin-right: 5px; vertical-align: -2px;"><rect x="1.5" y="3.5" width="13" height="9" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
+          <span id="theater-toggle-label">Theater mode</span>
+        </button>
+      </div>
       <video id="video-player" controls preload="metadata" style="width: 100%; border-radius: var(--radius); background: #000; display: block;" src="{{ base_path }}/videos/{{ video.id }}/file"></video>
-      <p class="subtitle" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
-        <span>Tip: with the player focused, use &larr;/&rarr; to skip 5s, Space to play/pause.</span>
-        <form method="post" action="{{ base_path }}/videos/{{ video.id }}/redownload" onsubmit="return confirm('Delete the current file and download it again?');" style="flex-shrink: 0;">
-          <button type="submit" class="status-action status-action-failed">Redownload</button>
-        </form>
-      </p>
+      <div class="theater-hide">
+        <p class="subtitle" style="display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+          <span>Tip: with the player focused, use &larr;/&rarr; to skip 5s, Space to play/pause.</span>
+          <form method="post" action="{{ base_path }}/videos/{{ video.id }}/redownload" onsubmit="return confirm('Delete the current file and download it again?');" style="flex-shrink: 0;">
+            <button type="submit" class="status-action status-action-failed">Redownload</button>
+          </form>
+        </p>
+      </div>
       <script>
         (function () {
           var player = document.getElementById("video-player");
@@ -60,10 +70,29 @@
           player.addEventListener("pause", function () { savePosition(player.currentTime); });
           player.addEventListener("ended", function () { savePosition(0); });
           window.addEventListener("beforeunload", function () { savePosition(player.currentTime); });
+
+          // Theater mode: a wider player and less surrounding text, without
+          // going into the browser's actual fullscreen. Remembered across
+          // videos via localStorage -- it's a viewing preference, not
+          // something tied to this specific video.
+          var THEATER_KEY = "archivelo-theater-mode";
+          var toggle = document.getElementById("theater-toggle");
+          var toggleLabel = document.getElementById("theater-toggle-label");
+          function setTheaterMode(on) {
+            document.body.classList.toggle("theater-mode", on);
+            if (toggleLabel) toggleLabel.textContent = on ? "Exit theater mode" : "Theater mode";
+            try { localStorage.setItem(THEATER_KEY, on ? "1" : "0"); } catch (e) {}
+          }
+          if (toggle) {
+            toggle.addEventListener("click", function () {
+              setTheaterMode(!document.body.classList.contains("theater-mode"));
+            });
+            var stored = null;
+            try { stored = localStorage.getItem(THEATER_KEY); } catch (e) {}
+            if (stored === "1") setTheaterMode(true);
+          }
         })();
       </script>
-    {% elif video.status == "queued" %}
-      <p class="empty-state">Queued &mdash; waiting for the download worker.</p>
     {% elif video.status == "canceled" %}
       <p class="empty-state">Paused at {{ video.progress_percent }}% &mdash; resume to continue from where it left off, or delete the partial file.</p>
       <span style="display: inline-flex; gap: 8px;">
@@ -87,7 +116,7 @@
     {% endif %}
   </div>
 
-  <div style="flex: 0 0 260px;">
+  <div class="theater-hide" style="flex: 0 0 260px;">
     <h3 style="margin-top: 0;">Details</h3>
     <table class="compact">
       <tbody>

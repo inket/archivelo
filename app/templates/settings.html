@@ -34,9 +34,29 @@
     <div class="settings-help">How many listing pages deep to look when checking the homepage feed or a subscribed category (~12 videos/page).</div>
   </div>
 
-  <div style="display: flex; align-items: center; gap: 14px;">
+  <h3>Notifications</h3>
+  <p class="subtitle">Get a <a href="https://pushover.net" target="_blank" rel="noopener">Pushover</a> push notification whenever a download finishes, or gives up after exhausting its retries. Leave blank to disable.</p>
+
+  <div class="settings-grid">
+    <div class="settings-label">Pushover User Key</div>
+    <input type="text" name="pushover_user_key" value="{{ pushover_user_key }}" placeholder="u1a2b3c4d5...">
+    <div class="settings-help">From your <a href="https://pushover.net" target="_blank" rel="noopener">Pushover</a> dashboard.</div>
+
+    <div class="settings-label">Pushover API Token</div>
+    <input type="text" name="pushover_api_token" value="{{ pushover_api_token }}" placeholder="a1b2c3d4e5...">
+    <div class="settings-help">From an application you create at <a href="https://pushover.net/apps/build" target="_blank" rel="noopener">pushover.net/apps/build</a>.</div>
+
+    <div class="settings-label">Public URL</div>
+    <input type="text" name="public_url" value="{{ public_url }}" placeholder="https://example.org/archivelo">
+    <div class="settings-help">Whatever you'd type in a browser to reach this app from outside &mdash; used to link straight to the video from a notification. Leave blank to send notifications without a link.</div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
     <button type="submit" class="btn btn-primary">Save</button>
+    <button type="submit" formaction="{{ base_path }}/settings/test-notification" class="btn btn-secondary">Send test notification</button>
     {% if saved %}<span class="save-confirmation">&#10003; Saved</span>{% endif %}
+    {% if test_ok %}<span class="save-confirmation">&#10003; Sent &mdash; check your device</span>{% endif %}
+    {% if test_error %}<span style="color: #b91c1c; font-size: 13px;">{{ test_error }}</span>{% endif %}
   </div>
 </form>
 

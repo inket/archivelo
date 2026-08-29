@@ -4,6 +4,7 @@ import logging.handlers
 import mimetypes
 import os
 import re
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, FastAPI, Form, HTTPException, Request, Response
 from fastapi.responses import RedirectResponse, StreamingResponse
@@ -11,7 +12,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app import config, downloader, scraper, settings, worker
+from app import config, downloader, notifications, scraper, settings, worker
 from app.db import SessionLocal, init_db
 from app.models import Category, Video
 
@@ -707,7 +708,13 @@ def logs_tail(request: Request):
     )
 
 
-def _settings_context(request: Request, saved: bool = False, error: str | None = None) -> dict:
+def _settings_context(
+    request: Request,
+    saved: bool = False,
+    error: str | None = None,
+    test_ok: bool = False,
+    test_error: str | None = None,
+) -> dict:
     return {
         "request": request,
         "source_base_url": settings.source_base_url(),
@@ -716,15 +723,24 @@ def _settings_context(request: Request, saved: bool = False, error: str | None =
         "max_concurrent_downloads": settings.max_concurrent_downloads(),
         "discovery_page_depth": settings.discovery_page_depth(),
         "max_retries": settings.max_retries(),
+        "pushover_user_key": settings.pushover_user_key(),
+        "pushover_api_token": settings.pushover_api_token(),
+        "public_url": settings.public_url(),
         "saved": saved,
         "error": error,
+        "test_ok": test_ok,
+        "test_error": test_error,
         "active_tab": "settings",
     }
 
 
 @router.get("/settings")
-def settings_page(request: Request, saved: bool = False):
-    return templates.TemplateResponse("settings.html", _settings_context(request, saved=saved))
+def settings_page(
+    request: Request, saved: bool = False, test_ok: bool = False, test_error: str | None = None
+):
+    return templates.TemplateResponse(
+        "settings.html", _settings_context(request, saved=saved, test_ok=test_ok, test_error=test_error)
+    )
 
 
 @router.post("/settings/save")
@@ -736,8 +752,14 @@ def settings_save(
     max_concurrent_downloads: int = Form(...),
     discovery_page_depth: int = Form(...),
     max_retries: int = Form(...),
+    pushover_user_key: str = Form(""),
+    pushover_api_token: str = Form(""),
+    public_url: str = Form(""),
 ):
     source_base_url = source_base_url.strip().rstrip("/")
+    pushover_user_key = pushover_user_key.strip()
+    pushover_api_token = pushover_api_token.strip()
+    public_url = public_url.strip().rstrip("/")
     errors = []
     if not source_base_url.startswith(("http://", "https://")):
         errors.append("Host URL must start with http:// or https://")
@@ -751,6 +773,8 @@ def settings_save(
         errors.append("Pages to scan must be at least 1")
     if max_retries < 1:
         errors.append("Max retries must be at least 1")
+    if public_url and not public_url.startswith(("http://", "https://")):
+        errors.append("Public URL must start with http:// or https://")
 
     if errors:
         context = _settings_context(request, error=" / ".join(errors))
@@ -761,6 +785,9 @@ def settings_save(
             max_concurrent_downloads=max_concurrent_downloads,
             discovery_page_depth=discovery_page_depth,
             max_retries=max_retries,
+            pushover_user_key=pushover_user_key,
+            pushover_api_token=pushover_api_token,
+            public_url=public_url,
         )
         return templates.TemplateResponse("settings.html", context)
 
@@ -770,7 +797,23 @@ def settings_save(
     settings.set_value("max_concurrent_downloads", str(max_concurrent_downloads))
     settings.set_value("discovery_page_depth", str(discovery_page_depth))
     settings.set_value("max_retries", str(max_retries))
+    settings.set_value("pushover_user_key", pushover_user_key)
+    settings.set_value("pushover_api_token", pushover_api_token)
+    settings.set_value("public_url", public_url)
     return RedirectResponse(url=f"{config.BASE_PATH}/settings?saved=1", status_code=303)
+
+
+@router.post("/settings/test-notification")
+def settings_test_notification(
+    pushover_user_key: str = Form(""),
+    pushover_api_token: str = Form(""),
+):
+    ok, err = notifications.send_test_notification(pushover_user_key, pushover_api_token)
+    if ok:
+        return RedirectResponse(url=f"{config.BASE_PATH}/settings?test_ok=1", status_code=303)
+    return RedirectResponse(
+        url=f"{config.BASE_PATH}/settings?test_error={quote(err or 'Unknown error')}", status_code=303
+    )
 
 
 app.include_router(router, prefix=config.BASE_PATH)

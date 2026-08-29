@@ -12,8 +12,10 @@ Runs as a single Docker container with a small FastAPI + HTMX web UI for trackin
 - **Subscribe** to a category to auto-download new uploads going forward — browsing never triggers a download on its own, only subscribing or an explicit click does
 - **Resumable downloads** — a stuck/stalled download is detected and killed automatically (independent OS-level watchdog, not just yt-dlp's own timeout) and retried with exponential backoff
 - **Cancel / Resume / Delete** for an in-progress download, and **Redownload** for anything already saved
+- **Theater mode** on the video page — a bigger player and less surrounding clutter, without going into browser fullscreen
+- **Push notifications** (via [Pushover](https://pushover.net)) when a download starts, finishes, or gives up after exhausting its retries, linking straight back to the video
 - **Archive** view of everything downloaded, with both download and upload dates
-- Runtime-configurable **Settings** page (poll interval, retry limits, concurrency, source host) — no restart needed
+- Runtime-configurable **Settings** page (poll interval, retry limits, concurrency, source host, notifications) — no restart needed
 - Survives container restarts cleanly: an interrupted download is requeued automatically on startup instead of silently stalling forever
 
 ## Quick start (Docker Compose)
