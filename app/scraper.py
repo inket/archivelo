@@ -1,6 +1,8 @@
 import datetime
+import json
 import logging
 import re
+from html import unescape
 
 import httpx
 from bs4 import BeautifulSoup
@@ -164,6 +166,9 @@ def page_url(base_url: str, page: int) -> str:
 
 
 _VIDEO_PHP_RE = re.compile(r'/[\w-]*\.php\?v=([^"\'&\s]+)')
+# FV Flowplayer embeds carry their sources as HTML-escaped JSON in a
+# data-item attribute, with JSON-escaped slashes ("https:\/\/...").
+_FLOWPLAYER_ITEM_RE = re.compile(r'data-item="([^"]+)"')
 _YOUTUBE_RE = re.compile(
     r'(https?://(?:www\.)?(?:youtube(?:-nocookie)?\.com/embed/[\w-]+|youtu\.be/[\w-]+)[^"\'&\s]*)'
 )
@@ -190,15 +195,34 @@ def resolve_source(video_page_html: str) -> dict:
         # requests where spaces/unicode/brackets are sent raw.
         return {"type": "direct", "url": m.group(1)}
 
+    url = _flowplayer_source(video_page_html)
+    if url:
+        return {"type": "direct", "url": url}
+
     m = _YOUTUBE_RE.search(video_page_html)
     if m:
         return {"type": "embed", "url": m.group(1)}
 
-    m = _GENERIC_VIDEO_URL_RE.search(video_page_html)
+    # Undo JSON slash-escaping so URLs inside inline JSON/scripts match too.
+    m = _GENERIC_VIDEO_URL_RE.search(video_page_html.replace("\\/", "/"))
     if m:
         return {"type": "direct", "url": m.group(0)}
 
     return {"type": "unknown", "url": None}
+
+
+def _flowplayer_source(video_page_html: str) -> str | None:
+    for m in _FLOWPLAYER_ITEM_RE.finditer(video_page_html):
+        try:
+            item = json.loads(unescape(m.group(1)))
+        except ValueError:
+            continue
+        sources = item.get("sources") if isinstance(item, dict) else None
+        for source in sources or []:
+            src = source.get("src") if isinstance(source, dict) else None
+            if src:
+                return src
+    return None
 
 
 def fetch_categories() -> list[dict]:
