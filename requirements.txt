@@ -6,4 +6,4 @@ python-multipart==0.0.9
 httpx==0.27.2
 beautifulsoup4==4.12.3
 html5lib==1.1
-yt-dlp==2024.10.7
+yt-dlp[default]==2026.8.19

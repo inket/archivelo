@@ -61,7 +61,7 @@ If you're using a subdomain instead (`https://archivelo.example.org`), leave `BA
 
 ## Local development
 
-Requires Python 3.12+ and `yt-dlp`/`ffmpeg` on `PATH`.
+Requires Python 3.12+ and `ffmpeg` on `PATH`, plus [deno](https://deno.com) for YouTube-hosted videos (yt-dlp uses it to solve YouTube's player challenges).
 
 ```bash
 python3 -m venv .venv
@@ -77,6 +77,7 @@ set -a && source .env.local && set +a
 - Discovery and downloads run as background threads inside the same process — no separate worker/queue service.
 - The site's markup is scraped with a mix of `BeautifulSoup` and targeted regexes (some of its HTML is malformed enough that a strict tree parse misses content).
 - Downloads shell out to `yt-dlp` as a subprocess rather than using its Python API, with an independent watchdog thread that kills and retries a download if it stalls — this proved more reliable than relying on yt-dlp's own internal timeouts.
+- yt-dlp upgrades itself (`pip install -U`) right before each download, since YouTube changes often enough to break older versions. In the Docker image it lives in its own venv (`/opt/yt-dlp`) so the upgrade never touches the app's dependencies; if the upgrade fails, the download proceeds on the installed version.
 - Publishing an image to `ghcr.io/inket/archivelo` is decoupled from pushing to `main` — see [Releasing](#releasing) below. Deploying is just pulling; nothing gets built on the host.
 
 ## Releasing

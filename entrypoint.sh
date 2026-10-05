@@ -20,7 +20,8 @@ if ! getent passwd "$PUID" >/dev/null 2>&1; then
     useradd -o -u "$PUID" -g "$PGID" -M -s /usr/sbin/nologin appuser
 fi
 
-for dir in /config /downloads; do
+# /opt/yt-dlp too, so the app can self-update yt-dlp before downloads.
+for dir in /config /downloads /opt/yt-dlp; do
     [ -d "$dir" ] && chown -R "$PUID":"$PGID" "$dir"
 done
 

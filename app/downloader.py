@@ -27,6 +27,12 @@ STALL_TIMEOUT_SECONDS = 45
 
 _YT_DLP_BIN = shutil.which("yt-dlp") or os.path.join(os.path.dirname(sys.executable), "yt-dlp")
 
+# YouTube changes often enough that an outdated yt-dlp stops finding
+# formats ("Requested format is not available"), so it's upgraded before
+# every download. Kept generous: a slow PyPI shouldn't fail the download,
+# it just proceeds with whatever version is already installed.
+UPDATE_TIMEOUT_SECONDS = 180
+
 _PERCENT_RE = re.compile(r"\[download\]\s+(\d+(?:\.\d+)?)%")
 _SPEED_RE = re.compile(r"at\s+([\d.]+\s?\w+/s)")
 _ETA_RE = re.compile(r"ETA\s+([\d:]+)")
@@ -122,6 +128,57 @@ def _update(video_id: int, **fields):
         session.commit()
     finally:
         session.close()
+
+
+def _yt_dlp_version() -> str | None:
+    try:
+        result = subprocess.run(
+            [_YT_DLP_BIN, "--version"], capture_output=True, text=True, timeout=30
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    return result.stdout.strip() or None
+
+
+def update_yt_dlp() -> None:
+    """Upgrades yt-dlp in place via the pip of the venv it's installed in.
+
+    Downloads run one at a time on the downloader thread, so no yt-dlp
+    process is running while its files get swapped out. Never raises: any
+    failure is logged and the download goes ahead on the current version.
+    """
+    # The venv's python sits next to its yt-dlp script; resolve symlinks
+    # first since the Docker image links /usr/local/bin/yt-dlp into it.
+    python = os.path.join(os.path.dirname(os.path.realpath(_YT_DLP_BIN)), "python")
+    if not os.path.isfile(python):
+        log.warning("Not updating yt-dlp: no venv python found next to %s", _YT_DLP_BIN)
+        return
+
+    before = _yt_dlp_version()
+    try:
+        result = subprocess.run(
+            [
+                python, "-m", "pip", "install",
+                "--upgrade", "--quiet", "--no-cache-dir", "--disable-pip-version-check",
+                "yt-dlp[default]",
+            ],
+            capture_output=True,
+            text=True,
+            timeout=UPDATE_TIMEOUT_SECONDS,
+        )
+    except (OSError, subprocess.TimeoutExpired) as exc:
+        log.warning("Updating yt-dlp failed, keeping %s: %s", before, exc)
+        return
+    if result.returncode != 0:
+        output = (result.stderr or result.stdout).strip().splitlines()
+        log.warning(
+            "Updating yt-dlp failed, keeping %s: %s", before, output[-1] if output else result.returncode
+        )
+        return
+
+    after = _yt_dlp_version()
+    if after != before:
+        log.info("Updated yt-dlp from %s to %s", before, after)
 
 
 def _stream_reader(pipe, line_queue: queue.Queue) -> None:
@@ -266,6 +323,7 @@ def download_video(video_id: int) -> None:
     _update(video_id, status="downloading", progress_percent=0.0, error_message=None)
 
     try:
+        update_yt_dlp()
         page_html = scraper.fetch(video_url)
         source = scraper.resolve_source(page_html)
 
