@@ -258,7 +258,11 @@ def download_video(video_id: int) -> None:
         _cancel_requested.discard(video_id)
 
     log.info("Started download: %r", title)
-    notifications.notify_download_started(video_id, title)
+    # Only announce the first attempt -- auto-retries would otherwise send a
+    # "started" for each one. Their outcome still arrives as "finished" or,
+    # once retries run out, "failed".
+    if retry_count == 0:
+        notifications.notify_download_started(video_id, title)
     _update(video_id, status="downloading", progress_percent=0.0, error_message=None)
 
     try:
