@@ -259,6 +259,26 @@ def save_position(video_id: int, position: float = Form(...), db: Session = Depe
     return Response(status_code=204)
 
 
+@router.get("/videos/{video_id}/stream")
+def stream_video(video_id: int, request: Request, db: Session = Depends(get_db)):
+    """Player for watching straight from the source site, before (or
+    instead of) downloading. The source is resolved only on demand, since
+    it costs a fetch of the video's page. The browser then plays the CDN
+    file (or embed) itself -- it isn't proxied through this server."""
+    video = db.get(Video, video_id)
+    if video is None:
+        raise HTTPException(status_code=404, detail="Video not found")
+    source, error = {"type": "unknown", "url": None}, None
+    try:
+        source = scraper.resolve_source(scraper.fetch(video.url))
+    except Exception as exc:  # noqa: BLE001 - surface any failure to the UI
+        error = str(exc)
+    return templates.TemplateResponse(
+        "_stream_player.html",
+        {"request": request, "video": video, "source": source, "error": error},
+    )
+
+
 _RANGE_RE = re.compile(r"bytes=(\d*)-(\d*)")
 _FILE_CHUNK_SIZE = 1024 * 1024
 

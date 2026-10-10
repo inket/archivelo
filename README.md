@@ -12,6 +12,7 @@ Runs as a single Docker container with a small FastAPI + HTMX web UI for trackin
 - **Subscribe** to a category to auto-download new uploads going forward — browsing never triggers a download on its own, only subscribing or an explicit click does
 - **Resumable downloads** — a stuck/stalled download is detected and killed automatically (independent OS-level watchdog, not just yt-dlp's own timeout) and retried with exponential backoff
 - **Cancel / Resume / Delete** for an in-progress download, and **Redownload** for anything already saved
+- **Stream from source** for videos that aren't downloaded yet — plays straight from the source site's CDN (or its YouTube embed) without saving anything, and remembers the playback position just like a downloaded file
 - **Theater mode** on the video page — a bigger player and less surrounding clutter, without going into browser fullscreen
 - **Push notifications** (via [Pushover](https://pushover.net)) when a download starts, finishes, or gives up after exhausting its retries, linking straight back to the video
 - **Archive** view of everything downloaded, with both download and upload dates
